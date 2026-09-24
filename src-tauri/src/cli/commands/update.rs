@@ -138,7 +138,7 @@ impl ResolvedRelease {
 // This source-built fork has no signed release channel. Keep upstream updates from
 // silently replacing the local account activation feature.
 fn local_build_update_error() -> AppError {
-    AppError::Message("This RainyPixel source build is updated by rebuilding https://github.com/RainyPixel/cc-switch-cli (build/rainypixel-codex-accounts). See LOCAL_BUILD.md.".into())
+    AppError::Message("This RainyPixel fork build is updated from fork releases at https://github.com/RainyPixel/cc-switch-cli/releases (branch build/rainypixel-codex-accounts). See LOCAL_BUILD.md.".into())
 }
 
 pub fn execute(cmd: UpdateCommand) -> Result<(), AppError> {

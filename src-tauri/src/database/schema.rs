@@ -1825,6 +1825,11 @@ impl Database {
             // GPT-6 Astra 标准价（USD / 1M tokens），与上游一致；不含长上下文和服务档位倍率。
             // https://developers.openai.com/api/docs/models/gpt-6-astra
             ("gpt-6-astra", "GPT-6 Astra", "10", "50", "1", "12.5"),
+            // GPT-6 Sol / Luna 标准价（USD / 1M tokens，2026-09-22 发布），不含长上下文和服务档位倍率。
+            // https://developers.openai.com/api/docs/models/gpt-6-sol
+            // https://developers.openai.com/api/docs/models/gpt-6-luna
+            ("gpt-6-sol", "GPT-6 Sol", "2", "10", "0.20", "2.50"),
+            ("gpt-6-luna", "GPT-6 Luna", "0.10", "0.50", "0.01", "0.125"),
             // GPT-5.6 系列（Sol / Terra / Luna，2026-06 发布）
             // 5.6 家族起 cache write 收 1.25× 输入价（此前 GPT 模型写缓存免费，勿回填旧系列）
             ("gpt-5.6-sol", "GPT-5.6 Sol", "5", "30", "0.50", "6.25"),

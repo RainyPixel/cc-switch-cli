@@ -264,6 +264,41 @@ mod tests {
     }
 
     #[test]
+    fn test_gpt_6_sol_luna_seeded_cost() {
+        let db = Database::memory().unwrap();
+        let usage = TokenUsage {
+            input_tokens: 1000,
+            output_tokens: 500,
+            cache_read_tokens: 200,
+            cache_creation_tokens: 100,
+            model: None,
+            message_id: None,
+        };
+
+        for model in ["gpt-6-sol", "gpt-6-sol-high", "openai/gpt-6-sol"] {
+            let pricing = lookup_model_pricing(&db, model).expect("Sol pricing");
+            let cost = calculate_cost(&AppType::Codex, &usage, Some(&pricing), Decimal::ONE)
+                .expect("Sol cost");
+            assert_eq!(format_decimal(cost.input_cost), "0.0014");
+            assert_eq!(format_decimal(cost.output_cost), "0.005");
+            assert_eq!(format_decimal(cost.cache_read_cost), "0.00004");
+            assert_eq!(format_decimal(cost.cache_creation_cost), "0.00025");
+            assert_eq!(format_decimal(cost.total_cost), "0.00669");
+        }
+
+        for model in ["gpt-6-luna", "gpt-6-luna-high", "openai/gpt-6-luna"] {
+            let pricing = lookup_model_pricing(&db, model).expect("Luna pricing");
+            let cost = calculate_cost(&AppType::Codex, &usage, Some(&pricing), Decimal::ONE)
+                .expect("Luna cost");
+            assert_eq!(format_decimal(cost.input_cost), "0.00007");
+            assert_eq!(format_decimal(cost.output_cost), "0.00025");
+            assert_eq!(format_decimal(cost.cache_read_cost), "0.000002");
+            assert_eq!(format_decimal(cost.cache_creation_cost), "0.0000125");
+            assert_eq!(format_decimal(cost.total_cost), "0.0003345");
+        }
+    }
+
+    #[test]
     fn test_cost_calculation() {
         let usage = TokenUsage {
             input_tokens: 1000,

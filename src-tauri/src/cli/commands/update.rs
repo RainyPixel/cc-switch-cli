@@ -135,12 +135,6 @@ impl ResolvedRelease {
     }
 }
 
-// This source-built fork has no signed release channel. Keep upstream updates from
-// silently replacing the local account activation feature.
-fn local_build_update_error() -> AppError {
-    AppError::Message("This RainyPixel fork build is updated from fork releases at https://github.com/RainyPixel/cc-switch-cli/releases (branch build/rainypixel-codex-accounts). See LOCAL_BUILD.md.".into())
-}
-
 pub fn execute(cmd: UpdateCommand) -> Result<(), AppError> {
     let runtime = create_runtime()?;
     runtime.block_on(execute_async(cmd))
@@ -168,10 +162,6 @@ async fn execute_async(cmd: UpdateCommand) -> Result<(), AppError> {
             )
         );
         return Ok(());
-    }
-
-    if env!("CARGO_PKG_REPOSITORY").contains("RainyPixel/") {
-        return Err(local_build_update_error());
     }
 
     let client = create_http_client()?;
@@ -732,7 +722,7 @@ fn validate_target_tag(tag: &str) -> Result<(), AppError> {
     }
     if !tag
         .chars()
-        .all(|ch| ch.is_ascii_alphanumeric() || ch == '.' || ch == '-' || ch == '_')
+        .all(|ch| ch.is_ascii_alphanumeric() || ch == '.' || ch == '-' || ch == '_' || ch == '+')
     {
         return Err(AppError::Message(format!(
             "Invalid version tag '{tag}': only [A-Za-z0-9._-] allowed."
@@ -1338,13 +1328,6 @@ pub(crate) struct UpdateCheckInfo {
 }
 
 pub(crate) async fn check_for_update() -> Result<UpdateCheckInfo, AppError> {
-    if env!("CARGO_PKG_REPOSITORY").contains("RainyPixel/") {
-        return Ok(build_update_check_info(
-            env!("CARGO_PKG_VERSION"),
-            format!("v{}", env!("CARGO_PKG_VERSION")),
-            false,
-        ));
-    }
     check_for_update_from_repo(REPO_URL).await
 }
 
@@ -1387,9 +1370,6 @@ pub(crate) async fn download_and_apply(
     target_tag: &str,
     on_progress: impl Fn(u64, Option<u64>),
 ) -> Result<(), AppError> {
-    if env!("CARGO_PKG_REPOSITORY").contains("RainyPixel/") {
-        return Err(local_build_update_error());
-    }
     // Same brew-prefix guard as the CLI path (see execute_async).
     if is_homebrew_install() {
         return Err(AppError::Message(

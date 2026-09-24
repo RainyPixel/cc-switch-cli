@@ -450,6 +450,7 @@ fn sanitized_asset_file_name_rejects_invalid_value() {
 #[test]
 fn validate_target_tag_accepts_normal_value() {
     validate_target_tag("v4.6.3-rc1").expect("valid tag should pass");
+    validate_target_tag("v5.10.5+rainypixel.1").expect("fork build-metadata tag should pass");
 }
 
 #[test]

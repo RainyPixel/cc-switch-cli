@@ -8,6 +8,7 @@ pub mod config_s3;
 pub mod config_webdav;
 #[cfg(unix)]
 pub mod daemon;
+pub mod daemon_autostart;
 pub mod deeplink;
 pub mod env;
 pub mod failover;

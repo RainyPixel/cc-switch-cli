@@ -23,6 +23,11 @@ pub enum DaemonCommand {
     Status,
     /// Show the path to the daemon log file.
     Logs,
+    /// Manage daemon autostart across reboots (systemd user unit on Linux)
+    Autostart {
+        #[command(subcommand)]
+        cmd: super::daemon_autostart::AutostartCommand,
+    },
 }
 
 pub fn execute(cmd: DaemonCommand) -> Result<(), AppError> {
@@ -31,6 +36,7 @@ pub fn execute(cmd: DaemonCommand) -> Result<(), AppError> {
         DaemonCommand::Stop => stop_daemon(),
         DaemonCommand::Status => status_daemon(),
         DaemonCommand::Logs => show_log_path(),
+        DaemonCommand::Autostart { cmd } => super::daemon_autostart::execute(cmd),
     }
 }
 

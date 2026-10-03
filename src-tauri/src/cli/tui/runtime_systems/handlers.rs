@@ -1270,11 +1270,19 @@ pub(crate) fn handle_managed_auth_msg(app: &mut App, msg: ManagedAuthMsg) {
             match result {
                 Ok(status) => {
                     app.clear_codex_oauth_binding_if_removed(&account_id);
+                    let still_active =
+                        status.active_codex_account_id.as_deref() == Some(account_id.as_str());
                     app.managed_auth_status = Some(status);
                     app.push_toast(
                         texts::tui_toast_managed_auth_account_removed(),
                         ToastKind::Success,
                     );
+                    if still_active {
+                        app.push_toast(
+                            texts::tui_toast_managed_auth_removed_still_active(),
+                            ToastKind::Warning,
+                        );
+                    }
                 }
                 Err(err) => {
                     app.push_toast(

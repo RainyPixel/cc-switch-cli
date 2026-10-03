@@ -8570,6 +8570,14 @@ pub mod texts {
         }
     }
 
+    pub fn tui_toast_managed_auth_removed_still_active() -> &'static str {
+        if is_chinese() {
+            "该账号仍是 Codex 当前登录账号；请使用“在 Codex 中使用”切换到其他账号，或运行 codex logout。"
+        } else {
+            "This account is still the active Codex login; switch with 'Use in Codex' or run `codex logout`."
+        }
+    }
+
     pub fn tui_toast_managed_auth_remove_failed(err: &str) -> String {
         if is_chinese() {
             format!("移除账号失败: {err}")

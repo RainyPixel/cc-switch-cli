@@ -252,6 +252,14 @@ fn remove_account(
         ))
         .map_err(AppError::Message)?;
     println!("{}", success("ChatGPT account removed."));
+    if crate::services::codex_account::active_account_id().as_deref() == Some(account_id) {
+        println!(
+            "{}",
+            info(
+                "This account is still the active Codex login (auth.json). Activate another with `cc-switch auth use <account-id>` or sign out with `codex logout`."
+            )
+        );
+    }
     Ok(())
 }
 

@@ -4901,6 +4901,42 @@ fn external_editor_picker_renders_detected_and_fallback_options() {
 }
 
 #[test]
+fn managed_account_action_picker_highlights_selected_delete_row() {
+    let _lock = lock_env();
+    let _lang = use_test_language(Language::English);
+    let _no_color = EnvGuard::set("NO_COLOR", "1");
+
+    let mut app = App::new(Some(AppType::Codex));
+    app.route = Route::Settings;
+    app.focus = Focus::Content;
+    app.managed_auth_status = Some(managed_auth_status());
+    app.overlay = Overlay::ManagedAccountActionPicker {
+        auth_provider: "codex_oauth".to_string(),
+        account_id: "acc-alt".to_string(),
+        selected: 2,
+    };
+
+    let buf = render_with_size(&app, &minimal_data(&app.app_type), 100, 28);
+    let all = all_text(&buf);
+    let delete_line = all
+        .lines()
+        .find(|line| line.contains(texts::tui_key_delete()))
+        .unwrap_or_else(|| panic!("delete row missing: {all}"));
+    assert!(
+        delete_line.contains(texts::tui_highlight_symbol()),
+        "delete row must be highlighted when selected=2: {all}"
+    );
+    let use_line = all
+        .lines()
+        .find(|line| line.contains("Use in Codex"))
+        .unwrap_or_else(|| panic!("use row missing: {all}"));
+    assert!(
+        !use_line.contains(texts::tui_highlight_symbol()),
+        "use row must not keep the highlight: {all}"
+    );
+}
+
+#[test]
 fn settings_page_shows_managed_accounts_summary() {
     let _lock = lock_env();
     let _lang = use_test_language(Language::English);

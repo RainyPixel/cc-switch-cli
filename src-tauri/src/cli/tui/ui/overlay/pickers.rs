@@ -881,6 +881,7 @@ pub(super) fn render_managed_account_action_picker_overlay(
         overlay_border_style(theme, false),
     );
 
+    let selected = selected.min(actions.len() - 1);
     let items = actions
         .into_iter()
         .map(|label| ListItem::new(Line::raw(label)));
@@ -888,7 +889,7 @@ pub(super) fn render_managed_account_action_picker_overlay(
         .highlight_style(selection_style(theme))
         .highlight_symbol(highlight_symbol(theme));
     let mut state = ListState::default();
-    state.select(Some(selected.min(1)));
+    state.select(Some(selected));
     frame.render_stateful_widget(list, body, &mut state);
 }
 

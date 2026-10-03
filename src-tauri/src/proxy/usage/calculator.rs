@@ -299,6 +299,30 @@ mod tests {
     }
 
     #[test]
+    fn test_gpt_6_1_sol_seeded_cost() {
+        let db = Database::memory().unwrap();
+        let usage = TokenUsage {
+            input_tokens: 1000,
+            output_tokens: 500,
+            cache_read_tokens: 200,
+            cache_creation_tokens: 100,
+            model: None,
+            message_id: None,
+        };
+
+        for model in ["gpt-6.1-sol", "gpt-6.1-sol-high", "openai/gpt-6.1-sol"] {
+            let pricing = lookup_model_pricing(&db, model).expect("6.1 Sol pricing");
+            let cost = calculate_cost(&AppType::Codex, &usage, Some(&pricing), Decimal::ONE)
+                .expect("6.1 Sol cost");
+            assert_eq!(format_decimal(cost.input_cost), "0.0014");
+            assert_eq!(format_decimal(cost.output_cost), "0.005");
+            assert_eq!(format_decimal(cost.cache_read_cost), "0.00002");
+            assert_eq!(format_decimal(cost.cache_creation_cost), "0.00025");
+            assert_eq!(format_decimal(cost.total_cost), "0.00667");
+        }
+    }
+
+    #[test]
     fn test_cost_calculation() {
         let usage = TokenUsage {
             input_tokens: 1000,

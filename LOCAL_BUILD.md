@@ -3,7 +3,7 @@
 This branch adds distribution metadata to the upstream account-activation patch.
 The upstream PR branch is `feat/codex-account-use`; local installation uses
 `build/rainypixel-codex-accounts` (rebased onto each adopted upstream release,
-currently v5.10.5) and version `5.10.5+rainypixel.2`.
+currently v5.10.5) and version `5.10.5+rainypixel.3`.
 
 Build with the pinned toolchain from `src-tauri`:
 
@@ -19,7 +19,8 @@ Codex process. In the TUI use Settings -> Managed accounts -> **u / Use in Codex
 Fork-specific changes on top of upstream v5.10.5:
 
 - `auth use` native Codex account activation (upstream PR SaladDay/cc-switch-cli#449)
-- GPT-6 Sol / GPT-6 Luna seeded pricing for cost tracking
+- GPT-6 Sol / GPT-6 Luna / GPT-6.1 Sol seeded pricing for cost tracking
+- account removal warns when the removed account is still the active Codex login
 - self-update resolves fork releases (`CARGO_PKG_REPOSITORY` already points at
   the fork); fork tags carry `+rainypixel.N` build metadata
 

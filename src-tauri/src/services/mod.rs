@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod balance;
 pub mod codex_account;
+pub mod codex_daemon_bridge;
 pub mod codex_history;
 pub mod codex_oauth;
 pub mod codex_oauth_models;

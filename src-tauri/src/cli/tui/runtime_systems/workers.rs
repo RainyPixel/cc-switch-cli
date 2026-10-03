@@ -721,6 +721,7 @@ fn managed_auth_worker_loop(rx: mpsc::Receiver<ManagedAuthReq>, tx: mpsc::Sender
                     },
                     ManagedAuthReq::Use { .. } => ManagedAuthMsg::Used {
                         result: Err(err.clone()),
+                        daemon_pushed: false,
                     },
                     ManagedAuthReq::SetDefault {
                         auth_provider,
@@ -779,11 +780,24 @@ fn managed_auth_worker_loop(rx: mpsc::Receiver<ManagedAuthReq>, tx: mpsc::Sender
                 auth_provider,
                 account_id,
             } => {
-                let result = rt.block_on(async {
+                let (result, daemon_pushed) = match rt.block_on(async {
                     crate::services::codex_account::use_account(&account_id).await?;
-                    crate::services::AuthService::get_status(&auth_provider).await
+                    // Best-effort live push; failure falls back to the restart hint.
+                    let daemon_pushed = matches!(
+                        crate::services::codex_daemon_bridge::push_account(&account_id).await,
+                        Ok(crate::services::codex_daemon_bridge::PushOutcome::Pushed)
+                    );
+                    crate::services::AuthService::get_status(&auth_provider)
+                        .await
+                        .map(|status| (status, daemon_pushed))
+                }) {
+                    Ok((status, daemon_pushed)) => (Ok(status), daemon_pushed),
+                    Err(err) => (Err(err), false),
+                };
+                let _ = tx.send(ManagedAuthMsg::Used {
+                    result,
+                    daemon_pushed,
                 });
-                let _ = tx.send(ManagedAuthMsg::Used { result });
             }
             ManagedAuthReq::SetDefault {
                 auth_provider,

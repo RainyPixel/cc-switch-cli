@@ -3665,7 +3665,7 @@ pub fn run(app_override: Option<AppType>) -> Result<(), AppError> {
                 frame_scheduler.mark_dirty();
                 let activated = matches!(
                     &msg,
-                    runtime_systems::ManagedAuthMsg::Used { result: Ok(_) }
+                    runtime_systems::ManagedAuthMsg::Used { result: Ok(_), .. }
                 );
                 handle_managed_auth_msg(&mut app, msg);
                 if activated {

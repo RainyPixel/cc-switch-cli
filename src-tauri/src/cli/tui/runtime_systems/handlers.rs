@@ -1223,18 +1223,24 @@ pub(crate) fn handle_managed_auth_msg(app: &mut App, msg: ManagedAuthMsg) {
                 );
             }
         },
-        ManagedAuthMsg::Used { result } => {
+        ManagedAuthMsg::Used {
+            result,
+            daemon_pushed,
+        } => {
             app.managed_auth_loading = false;
             match result {
                 Ok(status) => {
                     app.managed_auth_status = Some(status);
-                    app.push_toast(
-                        crate::t!(
-                            "Codex account activated. Restart Codex or launch a new process.",
-                            "Codex 账号已启用。请重启 Codex 或启动新进程。"
-                        ),
-                        ToastKind::Success,
-                    );
+                    let mut message = crate::t!(
+                        "Codex account activated. Restart Codex or launch a new process.",
+                        "Codex 账号已启用。请重启 Codex 或启动新进程。"
+                    )
+                    .to_string();
+                    if daemon_pushed {
+                        message.push('\n');
+                        message.push_str(texts::tui_toast_managed_auth_daemon_switched_live());
+                    }
+                    app.push_toast(message, ToastKind::Success);
                 }
                 Err(err) => app.push_toast(err, ToastKind::Error),
             }

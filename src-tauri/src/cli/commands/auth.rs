@@ -35,6 +35,11 @@ pub enum AuthCommand {
     },
     /// Activate an account for the next standalone Codex process
     Use { account_id: String },
+    /// Push managed account tokens into the running Codex daemon without rewriting auth.json
+    Push {
+        /// Account id to push (defaults to the default account)
+        account_id: Option<String>,
+    },
     /// Remove a ChatGPT account
     Remove {
         /// Account id to remove
@@ -67,17 +72,130 @@ pub fn execute(cmd: AuthCommand) -> Result<(), AppError> {
         AuthCommand::Login { json } => login(&runtime, json),
         AuthCommand::Default { account_id } => set_default(&runtime, &account_id),
         AuthCommand::Use { account_id } => {
+            let account_id = normalize_account_id(&account_id)?;
             runtime
-                .block_on(crate::services::codex_account::use_account(
-                    normalize_account_id(&account_id)?,
-                ))
+                .block_on(crate::services::codex_account::use_account(account_id))
                 .map_err(AppError::Message)?;
-            println!("{}", success("Codex account activated. Restart Codex or launch a new Codex process; /new does not reload login."));
+            // Best-effort live push into the running daemon; never fails the command.
+            report_push_outcome(runtime.block_on(
+                crate::services::codex_daemon_bridge::push_account(account_id),
+            ));
             Ok(())
         }
+        AuthCommand::Push { account_id } => push_account(&runtime, account_id.as_deref()),
         AuthCommand::Remove { account_id, yes } => remove_account(&runtime, &account_id, yes),
         AuthCommand::Logout { yes } => logout(&runtime, yes),
     }
+}
+
+const ACTIVATED_RESTART_MESSAGE: &str =
+    "Codex account activated. Restart Codex or launch a new Codex process; /new does not reload login.";
+
+fn report_push_outcome(outcome: Result<crate::services::codex_daemon_bridge::PushOutcome, String>) {
+    use crate::services::codex_daemon_bridge::PushOutcome;
+    match outcome {
+        Ok(PushOutcome::Pushed) => println!(
+            "{}",
+            success(
+                "Codex account activated and pushed to the running Codex daemon; the daemon switched live, no restart needed."
+            )
+        ),
+        Ok(PushOutcome::DaemonUnavailable | PushOutcome::TakeoverEnabled) => {
+            println!("{}", success(ACTIVATED_RESTART_MESSAGE))
+        }
+        Ok(PushOutcome::Unsupported(reason)) => {
+            println!("{}", success(ACTIVATED_RESTART_MESSAGE));
+            println!(
+                "{}",
+                info(&format!(
+                    "Running daemon rejected the live push ({reason}); this daemon build lacks the experimental API, restart Codex to apply the account."
+                ))
+            );
+        }
+        Ok(PushOutcome::Failed(reason)) => {
+            println!("{}", success(ACTIVATED_RESTART_MESSAGE));
+            println!(
+                "{}",
+                info(&format!(
+                    "Live push to the running daemon failed ({reason}); restart Codex to apply the account."
+                ))
+            );
+        }
+        Err(reason) => {
+            println!("{}", success(ACTIVATED_RESTART_MESSAGE));
+            println!(
+                "{}",
+                info(&format!(
+                    "Live push to the running daemon failed ({reason}); restart Codex to apply the account."
+                ))
+            );
+        }
+    }
+}
+
+fn push_account(
+    runtime: &tokio::runtime::Runtime,
+    account_id: Option<&str>,
+) -> Result<(), AppError> {
+    use crate::services::codex_daemon_bridge::PushOutcome;
+    let account_id = match account_id {
+        Some(account_id) => normalize_account_id(account_id)?.to_string(),
+        None => runtime
+            .block_on(AuthService::get_status(AUTH_PROVIDER_CODEX_OAUTH))
+            .map_err(AppError::Message)?
+            .default_account_id
+            .ok_or_else(|| {
+                AppError::Message(
+                    "No default ChatGPT account; pass an account id to push.".to_string(),
+                )
+            })?,
+    };
+    let outcome = runtime
+        .block_on(crate::services::codex_daemon_bridge::push_account(
+            &account_id,
+        ))
+        .map_err(AppError::Message)?;
+    match &outcome {
+        PushOutcome::Pushed => println!(
+            "{}",
+            success(&format!(
+                "Pushed account '{account_id}' to the running Codex daemon; it switched live without restart."
+            ))
+        ),
+        PushOutcome::DaemonUnavailable => println!(
+            "{}",
+            info("No running Codex daemon (control socket not found); nothing was pushed.")
+        ),
+        PushOutcome::TakeoverEnabled => println!(
+            "{}",
+            info(
+                "Codex proxy takeover is enabled; the daemon authenticates through the cc-switch proxy, so no tokens were pushed."
+            )
+        ),
+        PushOutcome::Unsupported(reason) => println!(
+            "{}",
+            info(&format!(
+                "Daemon rejected the live push ({reason}); this daemon build lacks the experimental API."
+            ))
+        ),
+        PushOutcome::Failed(reason) => {
+            return Err(AppError::Message(format!(
+                "Push to the running daemon failed: {reason}"
+            )))
+        }
+    }
+    if matches!(outcome, PushOutcome::Pushed)
+        && crate::services::codex_account::active_account_id().as_deref()
+            != Some(account_id.as_str())
+    {
+        println!(
+            "{}",
+            info(&format!(
+                "Warning: account '{account_id}' differs from the auth.json login; a daemon restart would fall back to the auth.json account. Run `cc-switch auth use {account_id}` to persist the switch."
+            ))
+        );
+    }
+    Ok(())
 }
 
 fn create_runtime() -> Result<tokio::runtime::Runtime, AppError> {

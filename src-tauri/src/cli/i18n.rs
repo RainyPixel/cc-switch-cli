@@ -8554,6 +8554,14 @@ pub mod texts {
         }
     }
 
+    pub fn tui_toast_managed_auth_daemon_switched_live() -> &'static str {
+        if is_chinese() {
+            "运行中的 Codex 守护进程已实时切换账号，无需重启。"
+        } else {
+            "Running Codex daemon switched live; no restart needed."
+        }
+    }
+
     pub fn tui_toast_managed_auth_default_failed(err: &str) -> String {
         if is_chinese() {
             format!("设置默认账号失败: {err}")

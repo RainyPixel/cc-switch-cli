@@ -125,6 +125,7 @@ pub async fn run(binary_path: PathBuf, pidfile: &PidFile) -> Result<(), String> 
     crate::services::global_proxy::initialize_http_client(&db);
     crate::services::session_usage::spawn_periodic_session_usage_sync(db.clone(), "daemon");
     Database::spawn_periodic_usage_maintenance(db.clone(), "daemon");
+    crate::services::codex_daemon_bridge::spawn_resident_worker();
     let supervisor = Supervisor::new(db, socket_path.clone(), binary_path);
 
     if let Err(err) = supervisor.recover_on_startup().await {

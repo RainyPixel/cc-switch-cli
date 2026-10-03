@@ -620,6 +620,8 @@ pub(crate) enum ManagedAuthMsg {
     },
     Used {
         result: Result<crate::services::ManagedAuthStatus, String>,
+        /// True when the running Codex daemon accepted the live token push.
+        daemon_pushed: bool,
     },
     DefaultSet {
         #[allow(dead_code)]
